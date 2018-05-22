@@ -72,8 +72,16 @@ vi /etc/docker/daemon.json
 systemctl enable docker
 systemctl start docker
 ```
-## 三、安装 kubernetes
-### 3.1 安装kubelet、kubectl、kubeadm
+## 三、安装 etcd
+### 3.1 创建 etcd CA 证书
+1、Install cfssl and cfssljson:
+```bash
+curl -o /usr/local/bin/cfssl https://pkg.cfssl.org/R1.2/cfssl_linux-amd64
+curl -o /usr/local/bin/cfssljson https://pkg.cfssl.org/R1.2/cfssljson_linux-amd64
+chmod +x /usr/local/bin/cfssl*
+```
+## 四、安装 kubernetes
+### 4.1 安装kubelet、kubectl、kubeadm
 ```bash
 cat <<EOF > /etc/yum.repos.d/kubernetes.repo
 [kubernetes]
@@ -88,14 +96,14 @@ setenforce 0
 yum install -y kubelet kubeadm kubectl
 systemctl enable kubelet && systemctl start kubelet
 ```
-### 3.2 验证 cgroup 一致性
+### 4.2 验证 cgroup 一致性
 ```bash
 使用 docker info | grep -i cgroup 查看Docker 的 cgroup
 使用 cat /etc/systemd/system/kubelet.service.d/10-kubeadm.conf 查看 kubeadm 使用的 cgroup
 如果 KUBELET_CGROUP_ARGS=--cgroup-driver= 的值与 docker info | grep -i cgroup 的值不一致，则使用以下命令修正
 sed -i "s/cgroup-driver=systemd/cgroup-driver=cgroupfs/g" /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
 ```
-### 3.3 重启 kubelet
+### 4.3 重启 kubelet
 ```bash
 systemctl daemon-reload
 systemctl restart kubelet
