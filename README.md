@@ -58,7 +58,6 @@ sudo yum -y install docker-ce
 mkdir /etc/docker
 vi /etc/docker/daemon.json
 {
-  #"hosts": ["tcp://0.0.0.0:2375", "unix:///var/run/docker.sock"],
   "registry-mirrors": ["https://of1ooeiv.mirror.aliyuncs.com"]
 }
 # 开启Docker服务
