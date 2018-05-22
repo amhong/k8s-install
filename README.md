@@ -80,8 +80,9 @@ curl -o /usr/local/bin/cfssl https://pkg.cfssl.org/R1.2/cfssl_linux-amd64
 curl -o /usr/local/bin/cfssljson https://pkg.cfssl.org/R1.2/cfssljson_linux-amd64
 chmod +x /usr/local/bin/cfssl*
 ```
-2、
+2、创建 etcd CA 证书
 ```bash
+在 Master1 节点上运行以下命令
 mkdir -p /etc/kubernetes/pki/etcd
 cd /etc/kubernetes/pki/etcd
 cat <<EOF > ca-config.json
@@ -130,7 +131,29 @@ cat >ca-csr.json <<EOF
    }
 }
 EOF
+cfssl gencert -initca ca-csr.json | cfssljson -bare ca -
+cat >client.json <<EOF
+{
+    "CN": "client",
+    "key": {
+        "algo": "ecdsa",
+        "size": 256
+    }
+}
+EOF
+cfssl gencert -ca=ca.pem -ca-key=ca-key.pem -config=ca-config.json -profile=client client.json | cfssljson -bare client
 ```
+3、在 Master2 和 Master3 节点上运行以下命令将上一步生成的证书拷贝过来
+```bash
+mkdir -p /etc/kubernetes/pki/etcd
+cd /etc/kubernetes/pki/etcd
+scp root@<Master1-ip-address>:/etc/kubernetes/pki/etcd/ca.pem .
+scp root@<Master1-ip-address>:/etc/kubernetes/pki/etcd/ca-key.pem .
+scp root@<Master1-ip-address>:/etc/kubernetes/pki/etcd/client.pem .
+scp root@<Master1-ip-address>:/etc/kubernetes/pki/etcd/client-key.pem .
+scp root@<Master1-ip-address>:/etc/kubernetes/pki/etcd/ca-config.json .
+```
+
 ## 四、安装 kubernetes
 ### 4.1 安装kubelet、kubectl、kubeadm
 ```bash
