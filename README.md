@@ -95,3 +95,8 @@ systemctl enable kubelet && systemctl start kubelet
 如果 KUBELET_CGROUP_ARGS=--cgroup-driver= 的值与 docker info | grep -i cgroup 的值不一致，则使用以下命令修正
 sed -i "s/cgroup-driver=systemd/cgroup-driver=cgroupfs/g" /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
 ```
+### 3.3 重启 kubelet
+```bash
+systemctl daemon-reload
+systemctl restart kubelet
+```
