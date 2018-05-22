@@ -61,6 +61,6 @@ vi /etc/docker/daemon.json
   "registry-mirrors": ["https://of1ooeiv.mirror.aliyuncs.com"]
 }
 # 开启Docker服务
-systemctl start docker
 systemctl enable docker
+systemctl start docker
 ```
