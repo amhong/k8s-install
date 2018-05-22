@@ -56,7 +56,7 @@ yum makecache fast
 sudo yum -y install docker-ce
 # 修改 Docker 镜像仓库源
 mkdir /etc/docker
-vim /etc/docker/daemon.json
+vi /etc/docker/daemon.json
 {
   #"hosts": ["tcp://0.0.0.0:2375", "unix:///var/run/docker.sock"],
   "registry-mirrors": ["https://of1ooeiv.mirror.aliyuncs.com"]
