@@ -85,41 +85,50 @@ chmod +x /usr/local/bin/cfssl*
 mkdir -p /etc/kubernetes/pki/etcd
 cd /etc/kubernetes/pki/etcd
 cat <<EOF > ca-config.json
-   {
-       "signing": {
-           "default": {
-               "expiry": "43800h"
-           },
-           "profiles": {
-               "server": {
-                   "expiry": "43800h",
-                   "usages": [
-                       "signing",
-                       "key encipherment",
-                       "server auth",
-                       "client auth"
-                   ]
-               },
-               "client": {
-                   "expiry": "43800h",
-                   "usages": [
-                       "signing",
-                       "key encipherment",
-                       "client auth"
-                   ]
-               },
-               "peer": {
-                   "expiry": "43800h",
-                   "usages": [
-                       "signing",
-                       "key encipherment",
-                       "server auth",
-                       "client auth"
-                   ]
-               }
-           }
-       }
+{
+    "signing": {
+        "default": {
+            "expiry": "43800h"
+        },
+        "profiles": {
+            "server": {
+                "expiry": "43800h",
+                "usages": [
+                    "signing",
+                    "key encipherment",
+                    "server auth",
+                    "client auth"
+                ]
+            },
+            "client": {
+                "expiry": "43800h",
+                "usages": [
+                    "signing",
+                    "key encipherment",
+                    "client auth"
+                ]
+            },
+            "peer": {
+                "expiry": "43800h",
+                "usages": [
+                    "signing",
+                    "key encipherment",
+                    "server auth",
+                    "client auth"
+                ]
+            }
+        }
+    }
+}
+EOF
+cat >ca-csr.json <<EOF
+{
+   "CN": "etcd",
+   "key": {
+       "algo": "rsa",
+       "size": 2048
    }
+}
 EOF
 ```
 ## 四、安装 kubernetes
