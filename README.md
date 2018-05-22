@@ -33,7 +33,15 @@ vi /lib/systemd/system/docker.service
 找到ExecStart=xxx，在这行上面加入一行，内容如下：(k8s的网络需要)
 ExecStartPost=/sbin/iptables -I FORWARD -s 0.0.0.0/0 -j ACCEPT
 ```
-8、重启
+8、设置系统参数 - 允许路由转发，不对bridge的数据进行处理
+```bash
+cat <<EOF >  /etc/sysctl.d/k8s.conf
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables = 1
+EOF
+sysctl --system
+```
+9、重启
 ```bash
 shutdown -r now
 ```
