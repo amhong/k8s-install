@@ -1,6 +1,7 @@
 # kube
 ## 一、安装前的准备
 1、安装操作系统时删除swap分区，若已经安装操作系统需禁用swap
+
 2、关闭防火墙
 ```bash
 $ systemctl stop firewalld.service
