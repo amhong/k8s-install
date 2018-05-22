@@ -30,7 +30,7 @@ vi /etc/hosts
 7、接受所有ip的数据包转发
 ```bash
 vi /lib/systemd/system/docker.service
-#找到ExecStart=xxx，在这行上面加入一行，内容如下：(k8s的网络需要)
+找到ExecStart=xxx，在这行上面加入一行，内容如下：(k8s的网络需要)
 ExecStartPost=/sbin/iptables -I FORWARD -s 0.0.0.0/0 -j ACCEPT
 ```
 8、重启
@@ -44,4 +44,24 @@ shutdown -r now
 sudo apt-get remove docker docker-engine docker.io
 ```
 ### 2.2 安装 Docker-ce
+```bash
+# 更新软件包
 yum update
+# 安装必要的一些系统工具
+yum install -y yum-utils device-mapper-persistent-data lvm2
+# 添加软件源信息
+yum-config-manager --add-repo http://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
+# 更新并安装 Docker-CE
+yum makecache fast
+sudo yum -y install docker-ce
+# 修改 Docker 镜像仓库源
+mkdir /etc/docker
+vim /etc/docker/daemon.json
+{
+  #"hosts": ["tcp://0.0.0.0:2375", "unix:///var/run/docker.sock"],
+  "registry-mirrors": ["https://of1ooeiv.mirror.aliyuncs.com"]
+}
+# 开启Docker服务
+systemctl start docker
+systemctl enable docker
+```
