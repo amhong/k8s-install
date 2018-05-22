@@ -20,13 +20,20 @@ vi /etc/selinux/config
 修改"SELINUX=disabled"
 ```
 6、配置host，使每个Node都可以通过名字解析到ip地址
+```bash
 vi /etc/hosts
 加入如下片段(ip地址和servername替换成自己的)
 192.168.1.201 kube-1
 192.168.1.202 kube-2
 192.168.1.203 kube-3
-
-7、重启
+```
+7、接受所有ip的数据包转发
+```bash
+vi /lib/systemd/system/docker.service
+#找到ExecStart=xxx，在这行上面加入一行，内容如下：(k8s的网络需要)
+ExecStartPost=/sbin/iptables -I FORWARD -s 0.0.0.0/0 -j ACCEPT
+```
+8、重启
 ```bash
 shutdown -r now
 ```
@@ -36,3 +43,5 @@ shutdown -r now
 ```bash
 sudo apt-get remove docker docker-engine docker.io
 ```
+### 2.2 安装 Docker-ce
+yum update
