@@ -73,7 +73,7 @@ systemctl enable docker
 systemctl start docker
 ```
 ## 三、安装 kubernetes
-### 1.1 安装kubelet、kubectl、kubeadm
+### 3.1 安装kubelet、kubectl、kubeadm
 ```bash
 cat <<EOF > /etc/yum.repos.d/kubernetes.repo
 [kubernetes]
@@ -87,4 +87,11 @@ EOF
 setenforce 0
 yum install -y kubelet kubeadm kubectl
 systemctl enable kubelet && systemctl start kubelet
+```
+### 3.2 验证 cgroup 一致性
+```bash
+使用 docker info | grep -i cgroup 查看Docker 的 cgroup
+使用 cat /etc/systemd/system/kubelet.service.d/10-kubeadm.conf 查看 kubeadm 使用的 cgroup
+如果 KUBELET_CGROUP_ARGS=--cgroup-driver= 的值与 docker info | grep -i cgroup 的值不一致，则使用以下命令修正
+sed -i "s/cgroup-driver=systemd/cgroup-driver=cgroupfs/g" /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
 ```
