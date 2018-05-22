@@ -120,7 +120,7 @@ cat <<EOF > ca-config.json
            }
        }
    }
-   EOF
+EOF
 ```
 ## 四、安装 kubernetes
 ### 4.1 安装kubelet、kubectl、kubeadm
