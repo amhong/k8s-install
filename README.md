@@ -51,7 +51,7 @@ shutdown -r now
 ```bash
 sudo apt-get remove docker docker-engine docker.io
 ```
-### 2.2 安装 Docker-ce
+### 2.2 安装 Docker-ce（使用17.03版）
 ```bash
 # 更新软件包
 yum update
