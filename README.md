@@ -227,3 +227,25 @@ sed -i "s/cgroup-driver=systemd/cgroup-driver=cgroupfs/g" /etc/systemd/system/ku
 systemctl daemon-reload
 systemctl restart kubelet
 ```
+### 4.4
+```bash
+cat >config.yaml <<EOF
+apiVersion: kubeadm.k8s.io/v1alpha1
+kind: MasterConfiguration
+api:
+  advertiseAddress: $PRIVATE_IP
+etcd:
+  endpoints:
+  - http://kube-1:2379
+  - http://kube-2:2379
+  - http://kube-3:2379
+networking:
+  podSubnet: 10.0.0.0/8
+apiServerCertSANs:
+- 192.168.1.200
+apiServerExtraArgs:
+  apiserver-count: "3"
+EOF
+
+kubeadm init --config=config.yaml
+```
