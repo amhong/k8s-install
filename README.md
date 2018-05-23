@@ -157,12 +157,14 @@ scp root@<Master1-ip-address>:/etc/kubernetes/pki/etcd/ca-config.json .
 ```bash
 curl -sSL https://github.com/coreos/etcd/releases/download/v3.1.15/etcd-v3.1.15-linux-amd64.tar.gz | tar -xzv --strip-components=1 -C /usr/local/bin/
 rm -rf etcd--linux-amd64*
-
-touch /etc/etcd.env
-echo "PEER_NAME=kube-3" >> /etc/etcd.env
-echo "PRIVATE_IP=192.168.1.203" >> /etc/etcd.env
-
-节点1
+```
+在每个节点上分别设置etcd节点名称和IP地址变量
+```bash
+PEER_NAME=etcd节点名称
+PRIVATE_IP=IP地址
+```
+在每个节点上创建 etcd 配置文件并启动 etcd 服务
+```bash
 cat >/etc/systemd/system/etcd.service <<EOF
 [Unit]
 Description=etcd
@@ -172,7 +174,6 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-EnvironmentFile=/etc/etcd.env
 Type=notify
 Restart=always
 RestartSec=5s
@@ -180,76 +181,14 @@ LimitNOFILE=40000
 TimeoutStartSec=0
 
 ExecStart=/usr/local/bin/etcd \
---name kube-1 \
+--name $PEER_NAME \
 --data-dir /var/lib/etcd \
---initial-advertise-peer-urls http://192.168.1.201:2380 \
---listen-peer-urls http://192.168.1.201:2380 \
---listen-client-urls http://192.168.1.201:2379,http://127.0.0.1:2379 \
---advertise-client-urls http://192.168.1.201:2379 \
+--initial-advertise-peer-urls http://$PRIVATE_IP:2380 \
+--listen-peer-urls http://$PRIVATE_IP:2380 \
+--listen-client-urls http://$PRIVATE_IP:2379,http://127.0.0.1:2379 \
+--advertise-client-urls http://$PRIVATE_IP:2379 \
 --initial-cluster-token etcd-cluster-1 \
---initial-cluster kube-1=http://192.168.1.201:2380,kube-2=http://192.168.1.202:2380,kube-3=http://192.168.1.203:2380 \
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-节点2
-cat >/etc/systemd/system/etcd.service <<EOF
-[Unit]
-Description=etcd
-Documentation=https://github.com/coreos/etcd
-After=network.target
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-EnvironmentFile=/etc/etcd.env
-Type=notify
-Restart=always
-RestartSec=5s
-LimitNOFILE=40000
-TimeoutStartSec=0
-
-ExecStart=/usr/local/bin/etcd \
---name kube-2 \
---data-dir /var/lib/etcd \
---initial-advertise-peer-urls http://192.168.1.202:2380 \
---listen-peer-urls http://192.168.1.202:2380 \
---listen-client-urls http://192.168.1.202:2379,http://127.0.0.1:2379 \
---advertise-client-urls http://192.168.1.202:2379 \
---initial-cluster-token etcd-cluster-1 \
---initial-cluster kube-1=http://192.168.1.201:2380,kube-2=http://192.168.1.202:2380,kube-3=http://192.168.1.203:2380 \
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-节点3
-cat >/etc/systemd/system/etcd.service <<EOF
-[Unit]
-Description=etcd
-Documentation=https://github.com/coreos/etcd
-After=network.target
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-EnvironmentFile=/etc/etcd.env
-Type=notify
-Restart=always
-RestartSec=5s
-LimitNOFILE=40000
-TimeoutStartSec=0
-
-ExecStart=/usr/local/bin/etcd \
---name kube-3 \
---data-dir /var/lib/etcd \
---initial-advertise-peer-urls http://192.168.1.203:2380 \
---listen-peer-urls http://192.168.1.203:2380 \
---listen-client-urls http://192.168.1.203:2379,http://127.0.0.1:2379 \
---advertise-client-urls http://192.168.1.203:2379 \
---initial-cluster-token etcd-cluster-1 \
---initial-cluster kube-1=http://192.168.1.201:2380,kube-2=http://192.168.1.202:2380,kube-3=http://192.168.1.203:2380 \
+--initial-cluster kube-1=http://kube-1:2380,kube-2=http://kube-2:2380,kube-3=http://kube-3:2380 \
 
 [Install]
 WantedBy=multi-user.target
@@ -257,6 +196,7 @@ EOF
 
 systemctl daemon-reload
 systemctl start etcd
+systemctl enable etcd
 
 ```
 ## 四、安装 kubernetes
