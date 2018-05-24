@@ -1,9 +1,7 @@
 # kube
 ## 一、安装前的准备
-1、安装操作系统时删除swap分区，若已经安装操作系统需禁用swap
-
-2、修改每台服务器的主机名和IP地址。
-
+1、安装操作系统时删除swap分区，若已经安装操作系统需禁用swap  
+2、修改每台服务器的主机名和IP地址。  
 3、如果是虚拟机还要保证每个虚拟机的MAC地址和产品UUID不重复，使用如下两条命令查看
 ```bash
 ifconfig -a
@@ -246,12 +244,9 @@ journalctl -f -u kube-apiserver
 ```bash
 yum install keepalived
 ```
-2、生成 keepalived 配置文件（各Master节点， 和interface）
-
-注意修改 state，Master节点1为 MASTER，其余节点为 BACKUP
-
-注意修改 priority，Master节点1为 100，Master节点2为 99，Master节点2为 98
-
+2、生成 keepalived 配置文件（各Master节点， 和interface）  
+注意修改 state，Master节点1为 MASTER，其余节点为 BACKUP  
+注意修改 priority，Master节点1为 100，Master节点2为 99，Master节点2为 98  
 注意修改 interface 为各节点网卡名称
 ```bash
 cat >/etc/keepalived/keepalived.conf <<EOF
