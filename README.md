@@ -249,3 +249,74 @@ EOF
 
 kubeadm init --config=config.yaml
 ```
+
+
+```bash
+cat >/etc/systemd/system/kube-apiserver.service <<EOF
+[Unit]
+Description=Kubernetes API Server
+Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+After=network.target
+[Service]
+ExecStart=/usr/bin/kube-apiserver \
+--admission-control=NamespaceLifecycle,LimitRanger,DefaultStorageClass,ResourceQuota,NodeRestriction \
+--insecure-bind-address=0.0.0.0 \
+--kubelet-https=false \
+--service-cluster-ip-range=10.68.0.0/16 \
+--service-node-port-range=20000-40000 \
+--etcd-servers=http://kube-1:2379,http://kube-2:2379,http://kube-3:2379 \
+--enable-swagger-ui=true \
+--allow-privileged=true \
+--audit-log-maxage=30 \
+--audit-log-maxbackup=3 \
+--audit-log-maxsize=100 \
+--audit-log-path=/var/lib/audit.log \
+--event-ttl=1h \
+--v=2
+Restart=on-failure
+RestartSec=5
+Type=notify
+LimitNOFILE=65536
+[Install]
+WantedBy=multi-user.target
+EOF
+
+cat >/etc/systemd/system/kube-controller-manager.service <<EOF
+[Unit]
+Description=Kubernetes Controller Manager
+Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+[Service]
+ExecStart=/usr/bin/kube-controller-manager \
+--address=127.0.0.1 \
+--master=http://127.0.0.1:8080 \
+--allocate-node-cidrs=true \
+--service-cluster-ip-range=10.68.0.0/16 \
+--cluster-cidr=172.20.0.0/16 \
+--cluster-name=kubernetes \
+--leader-elect=true \
+--cluster-signing-cert-file= \
+--cluster-signing-key-file= \
+--v=2
+Restart=on-failure
+RestartSec=5
+[Install]
+WantedBy=multi-user.target
+EOF
+
+cat >/etc/systemd/system/kube-scheduler.service <<EOF
+[Unit]
+Description=Kubernetes Scheduler
+Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+
+[Service]
+ExecStart=/usr/bin/kube-scheduler \
+--address=127.0.0.1 \
+--master=http://127.0.0.1:8080 \
+--leader-elect=true \
+--v=2
+Restart=on-failure
+RestartSec=5
+[Install]
+WantedBy=multi-user.target
+EOF
+```
