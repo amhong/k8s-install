@@ -197,9 +197,9 @@ systemctl start etcd
 systemctl enable etcd
 
 ```
-## 四、安装 kubernetes
+## 四、安装kubernetes
 ### 4.1 安装kube-apiserver
-1、生成 kube-apiserver 配置文件（各Master节点）
+1、生成kube-apiserver配置文件（各Master节点）
 ```bash
 cat >/etc/systemd/system/kube-apiserver.service <<EOF
 [Unit]
@@ -230,24 +230,24 @@ LimitNOFILE=65536
 WantedBy=multi-user.target
 EOF
 ```
-2、启用 kube-apiserver 服务（各Master节点）
+2、启用kube-apiserver服务（各Master节点）
 ```bash
 systemctl enable kube-apiserver.service
 systemctl start kube-apiserver
 ```
-3、查看 kube-apiserver 日志确认启动状态（各Master节点）
+3、查看kube-apiserver日志确认启动状态（各Master节点）
 ```bash
 journalctl -f -u kube-apiserver
 ```
-### 4.2 各Master节点配置 kube-apiserver 高可用
-1、安装 keepalived（各Master节点）
+### 4.2 配置kube-apiserver高可用
+1、安装keepalived（各Master节点）
 ```bash
 yum install keepalived
 ```
 2、生成 keepalived 配置文件（各Master节点， 和interface）  
-注意修改 state，Master节点1为 MASTER，其余节点为 BACKUP  
-注意修改 priority，Master节点1为 100，Master节点2为 99，Master节点2为 98  
-注意修改 interface 为各节点网卡名称
+注意修改state，Master节点1为MASTER，其余节点为BACKUP  
+注意修改priority，Master节点1为100，Master节点2为99，Master节点2为98  
+注意修改interface 为各节点网卡名称
 ```bash
 cat >/etc/keepalived/keepalived.conf <<EOF
 global_defs {
@@ -312,16 +312,18 @@ virtual_server 192.168.1.200 8080 {
 }
 EOF
 ```
-3、启用 keepalived 服务（各Master节点）
+3、启用keepalived服务（各Master节点）
 ```bash
 systemctl enable keepalived
 systemctl start keepalived
 ```
-3、查看 keepalived 日志确认启动状态（各Master节点）
+3、查看keepalived日志确认启动状态（各Master节点）
 ```bash
 journalctl -f -u keepalived
 ```
-
+### 4.3 安装kube-controller-manager
+1、生成kube-controller-manager配置文件（各Master节点）
+```bash
 cat >/etc/systemd/system/kube-controller-manager.service <<EOF
 [Unit]
 Description=Kubernetes Controller Manager
@@ -329,7 +331,7 @@ Documentation=https://github.com/GoogleCloudPlatform/kubernetes
 [Service]
 ExecStart=/usr/bin/kube-controller-manager \
 --address=127.0.0.1 \
---master=http://127.0.0.1:8080 \
+--master=http://192.168.1.200:8080 \
 --allocate-node-cidrs=true \
 --service-cluster-ip-range=10.68.0.0/16 \
 --cluster-cidr=172.20.0.0/16 \
@@ -343,7 +345,19 @@ RestartSec=5
 [Install]
 WantedBy=multi-user.target
 EOF
-
+```
+2、启用kube-controller-manager服务（各Master节点）
+```bash
+systemctl enable kube-controller-manage.service
+systemctl start kube-controller-manage
+```
+3、查看kube-controller-manage日志确认启动状态（各Master节点）
+```bash
+journalctl -f -u kube-controller-manage
+```
+### 4.4 安装kube-scheduler
+1、生成kube-scheduler配置文件（各Master节点）
+```bash
 cat >/etc/systemd/system/kube-scheduler.service <<EOF
 [Unit]
 Description=Kubernetes Scheduler
@@ -352,7 +366,7 @@ Documentation=https://github.com/GoogleCloudPlatform/kubernetes
 [Service]
 ExecStart=/usr/bin/kube-scheduler \
 --address=127.0.0.1 \
---master=http://127.0.0.1:8080 \
+--master=http://192.168.1.200:8080 \
 --leader-elect=true \
 --v=2
 Restart=on-failure
@@ -360,7 +374,18 @@ RestartSec=5
 [Install]
 WantedBy=multi-user.target
 EOF
-
+```
+2、启用kube-scheduler服务（各Master节点）
+```bash
+systemctl enable kube-scheduler.service
+systemctl start kube-scheduler
+```
+3、查看kube-scheduler日志确认启动状态（各Master节点）
+```bash
+journalctl -f -u kube-scheduler
+```
+### 4.5 安装calico网络插件
+```bash
 cat >/etc/systemd/system/kube-calico.service <<EOF
 [Unit]
 Description=calico node
