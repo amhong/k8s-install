@@ -348,12 +348,12 @@ EOF
 ```
 2、启用kube-controller-manager服务（各Master节点）
 ```bash
-systemctl enable kube-controller-manage.service
-systemctl start kube-controller-manage
+systemctl enable kube-controller-manager.service
+systemctl start kube-controller-manager
 ```
-3、查看kube-controller-manage日志确认启动状态（各Master节点）
+3、查看kube-controller-manager日志确认启动状态（各Master节点）
 ```bash
-journalctl -f -u kube-controller-manage
+journalctl -f -u kube-controller-manager
 ```
 ### 4.4 安装kube-scheduler
 1、生成kube-scheduler配置文件（各Master节点）
