@@ -319,4 +319,117 @@ RestartSec=5
 [Install]
 WantedBy=multi-user.target
 EOF
+
+cat >/etc/systemd/system/kube-calico.service <<EOF
+[Unit]
+Description=calico node
+After=docker.service
+Requires=docker.service
+
+[Service]
+User=root
+PermissionsStartOnly=true
+ExecStart=/usr/bin/docker run --net=host --privileged --name=calico-node \
+-e ETCD_ENDPOINTS=http://kube-1:2379,http://kube-2:2379,http://kube-3:2379 \
+-e CALICO_LIBNETWORK_ENABLED=true \
+-e CALICO_NETWORKING_BACKEND=bird \
+-e CALICO_DISABLE_FILE_LOGGING=true \
+-e CALICO_IPV4POOL_CIDR=172.20.0.0/16 \
+-e CALICO_IPV4POOL_IPIP=off \
+-e FELIX_DEFAULTENDPOINTTOHOSTACTION=ACCEPT \
+-e FELIX_IPV6SUPPORT=false \
+-e FELIX_LOGSEVERITYSCREEN=info \
+-e FELIX_IPINIPMTU=1440 \
+-e FELIX_HEALTHENABLED=true \
+-e IP= \
+-v /var/run/calico:/var/run/calico \
+-v /lib/modules:/lib/modules \
+-v /run/docker/plugins:/run/docker/plugins \
+-v /var/run/docker.sock:/var/run/docker.sock \
+-v /var/log/calico:/var/log/calico \
+registry.cn-hangzhou.aliyuncs.com/imooc/calico-node:v2.6.2
+ExecStop=/usr/bin/docker rm -f calico-node
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+EOF
+```
+
+主节点+工作节点：
+```bash
+mkdir -p /var/lib/kubelet
+mkdir -p /etc/kubernetes
+mkdir -p /etc/cni/net.d
+
+cat >/etc/systemd/system/kubelet.service <<EOF
+[Unit]
+Description=Kubernetes Kubelet
+Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+After=docker.service
+Requires=docker.service
+
+[Service]
+WorkingDirectory=/var/lib/kubelet
+ExecStart=/usr/bin/kubelet \
+--address=$PRIVATE_IP \
+--hostname-override=$PRIVATE_IP \
+--pod-infra-container-image=registry.cn-hangzhou.aliyuncs.com/imooc/pause-amd64:3.0 \
+--kubeconfig=/etc/kubernetes/kubelet.kubeconfig \
+--network-plugin=cni \
+--cni-conf-dir=/etc/cni/net.d \
+--cni-bin-dir=/usr/bin \
+--cluster-dns=10.68.0.2 \
+--cluster-domain=cluster.local. \
+--allow-privileged=true \
+--fail-swap-on=false \
+--logtostderr=true \
+--v=2
+#kubelet cAdvisor 默认在所有接口监听 4194 端口的请求, 以下iptables限制内网访问
+ExecStartPost=/sbin/iptables -A INPUT -s 10.0.0.0/8 -p tcp --dport 4194 -j ACCEPT
+ExecStartPost=/sbin/iptables -A INPUT -s 172.16.0.0/12 -p tcp --dport 4194 -j ACCEPT
+ExecStartPost=/sbin/iptables -A INPUT -s 192.168.0.0/16 -p tcp --dport 4194 -j ACCEPT
+ExecStartPost=/sbin/iptables -A INPUT -p tcp --dport 4194 -j DROP
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+cat >/etc/kubernetes/kubelet.kubeconfig <<EOF
+apiVersion: v1
+clusters:
+- cluster:
+    insecure-skip-tls-verify: true
+    server: http://192.168.1.201:8080
+  name: kubernetes
+contexts:
+- context:
+    cluster: kubernetes
+    user: ""
+  name: system:node:kube-master
+current-context: system:node:kube-master
+kind: Config
+preferences: {}
+users: []
+EOF
+
+cat >/etc/cni/net.d/10-calico.conf <<EOF
+{
+    "name": "calico-k8s-network",
+    "cniVersion": "0.1.0",
+    "type": "calico",
+    "etcd_endpoints": "http://kube-1:2379,http://kube-2:2379,http://kube-3:2379",
+    "log_level": "info",
+    "ipam": {
+        "type": "calico-ipam"
+    },
+    "kubernetes": {
+        "k8s_api_root": "http://192.168.1.201:8080"
+    }
+}
+EOF
+
 ```
