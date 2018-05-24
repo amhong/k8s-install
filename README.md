@@ -247,8 +247,11 @@ journalctl -f -u kube-apiserver
 yum install keepalived
 ```
 2、生成 keepalived 配置文件（各Master节点， 和interface）
+
 注意修改 state，Master节点1为 MASTER，其余节点为 BACKUP
+
 注意修改 priority，Master节点1为 100，Master节点2为 99，Master节点2为 98
+
 注意修改 interface 为各节点网卡名称
 ```bash
 cat >/etc/keepalived/keepalived.conf <<EOF
