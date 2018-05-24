@@ -200,57 +200,8 @@ systemctl enable etcd
 
 ```
 ## 四、安装 kubernetes
-### 4.1 安装kubelet、kubectl、kubeadm
-```bash
-cat <<EOF > /etc/yum.repos.d/kubernetes.repo
-[kubernetes]
-name=Kubernetes
-baseurl=https://mirrors.aliyun.com/kubernetes/yum/repos/kubernetes-el7-x86_64/
-enabled=1
-gpgcheck=1
-repo_gpgcheck=1
-gpgkey=https://mirrors.aliyun.com/kubernetes/yum/doc/yum-key.gpg https://mirrors.aliyun.com/kubernetes/yum/doc/rpm-package-key.gpg
-EOF
-setenforce 0
-yum install -y kubelet kubeadm kubectl
-systemctl enable kubelet && systemctl start kubelet
-```
-### 4.2 验证 cgroup 一致性
-```bash
-使用 docker info | grep -i cgroup 查看Docker 的 cgroup
-使用 cat /etc/systemd/system/kubelet.service.d/10-kubeadm.conf 查看 kubeadm 使用的 cgroup
-如果 KUBELET_CGROUP_ARGS=--cgroup-driver= 的值与 docker info | grep -i cgroup 的值不一致，则使用以下命令修正
-sed -i "s/cgroup-driver=systemd/cgroup-driver=cgroupfs/g" /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
-```
-### 4.3 重启 kubelet
-```bash
-systemctl daemon-reload
-systemctl restart kubelet
-```
-### 4.4
-```bash
-cat >config.yaml <<EOF
-apiVersion: kubeadm.k8s.io/v1alpha1
-kind: MasterConfiguration
-api:
-  advertiseAddress: $PRIVATE_IP
-etcd:
-  endpoints:
-  - http://kube-1:2379
-  - http://kube-2:2379
-  - http://kube-3:2379
-networking:
-  podSubnet: 10.0.0.0/8
-apiServerCertSANs:
-- 192.168.1.200
-apiServerExtraArgs:
-  apiserver-count: "3"
-EOF
-
-kubeadm init --config=config.yaml
-```
-
-
+### 4.1 安装kube-apiserver
+1、生成 kube-apiserver 配置文件（各Master节点）
 ```bash
 cat >/etc/systemd/system/kube-apiserver.service <<EOF
 [Unit]
@@ -280,6 +231,98 @@ LimitNOFILE=65536
 [Install]
 WantedBy=multi-user.target
 EOF
+```
+2、启用 kube-apiserver 服务（各Master节点）
+```bash
+systemctl enable kube-apiserver.service
+systemctl start kube-apiserver
+```
+3、查看 kube-apiserver 日志确认启动状态（各Master节点）
+```bash
+journalctl -f -u kube-apiserver
+```
+### 4.2 各Master节点配置 kube-apiserver 高可用
+1、安装 keepalived（各Master节点）
+```bash
+yum install keepalived
+```
+2、生成 keepalived 配置文件（各Master节点， 和interface）
+注意修改 state，Master节点1为 MASTER，其余节点为 BACKUP
+注意修改 priority，Master节点1为 100，Master节点2为 99，Master节点2为 98
+注意修改 interface 为各节点网卡名称
+```bash
+cat >/etc/keepalived/keepalived.conf <<EOF
+global_defs {
+  router_id kubernetes
+}
+
+vrrp_instance VI_1 {
+    state MASTER
+    interface eth0
+    virtual_router_id 51
+    priority 100
+    authentication {
+        auth_type PASS
+        auth_pass 4be37dc3b4c90194d1600c483e10ad1d
+    }
+    virtual_ipaddress {
+        192.168.1.200
+    }
+}
+
+virtual_server 192.168.1.200 8080 {
+    delay_loop 6
+    lb_algo wrr
+    lb_kind DR
+    protocol TCP
+    real_server 192.168.1.201 8080 {
+        weight 10
+        HTTP_GET {
+            url {
+                path /healthz
+                digest 444bcb3a3fcf8389296c49467f27e1d6
+            }
+            connect_timeout 3
+            nb_get_retry 3
+            delay_before_retry 1
+        }
+    }
+    real_server 192.168.1.202 8080 {
+        weight 10
+        HTTP_GET {
+            url {
+                path /healthz
+                digest 444bcb3a3fcf8389296c49467f27e1d6
+            }
+            connect_timeout 3
+            nb_get_retry 3
+            delay_before_retry 1
+        }
+    }
+    real_server 192.168.1.203 8080 {
+        weight 10
+        HTTP_GET {
+            url {
+                path /healthz
+                digest 444bcb3a3fcf8389296c49467f27e1d6
+            }
+            connect_timeout 3
+            nb_get_retry 3
+            delay_before_retry 1
+        }
+    }
+}
+EOF
+```
+3、启用 keepalived 服务（各Master节点）
+```bash
+systemctl enable keepalived
+systemctl start keepalived
+```
+3、查看 keepalived 日志确认启动状态（各Master节点）
+```bash
+journalctl -f -u keepalived
+```
 
 cat >/etc/systemd/system/kube-controller-manager.service <<EOF
 [Unit]
