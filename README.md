@@ -497,5 +497,49 @@ cat >/etc/cni/net.d/10-calico.conf <<EOF
     }
 }
 EOF
+```
+### 4.6 安装kube-porxy
+```bash
+mkdir -p /var/lib/kube-proxy
 
+cat >/lib/systemd/system/kube-proxy.service <<EOF
+[Unit]
+Description=Kubernetes Kube-Proxy Server
+Documentation=https://github.com/GoogleCloudPlatform/kubernetes
+After=network.target
+[Service]
+WorkingDirectory=/var/lib/kube-proxy
+ExecStart=/usr/bin/kube-proxy \
+--bind-address=$PRIVATE_IP \
+--hostname-override=$PRIVATE_IP \
+--kubeconfig=/etc/kubernetes/kube-proxy.kubeconfig \
+--logtostderr=true \
+--v=2
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+cat >/etc/kubernetes/kube-proxy.kubeconfig <<EOF
+apiVersion: v1
+clusters:
+- cluster:
+    server: http://192.168.1.200:8080
+  name: kubernetes
+contexts:
+- context:
+    cluster: kubernetes
+  name: default
+current-context: default
+kind: Config
+preferences: {}
+users: []
+EOF
+
+systemctl enable kube-proxy.service
+systemctl start kube-proxy
+journalctl -f -u kube-proxy
 ```
